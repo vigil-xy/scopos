@@ -141,3 +141,4 @@ async function scan() {
 }
 
 module.exports = { scan };
+export {};

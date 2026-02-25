@@ -81,7 +81,7 @@ function detectViolationsFromSnapshot(snapshot) {
   return violations;
 }
 
-function readViolations() {
+function readViolations(): any[] {
   ensureDirs();
   if (!fs.existsSync(VIOLATION_LOG)) return [];
 
@@ -104,14 +104,14 @@ function getViolationsLast24h() {
 
 function generateDailyReport() {
   const all = readViolations();
-  const byDate = {};
+  const byDate: Record<string, any[]> = {};
   for (const entry of all) {
     const date = String(entry.timestamp).slice(0, 10);
     if (!byDate[date]) byDate[date] = [];
     byDate[date].push(entry);
   }
 
-  return Object.entries(byDate).map(([date, entries]) => ({
+  return (Object.entries(byDate) as [string, any[]][]).map(([date, entries]) => ({
     date,
     totalViolations: entries.length,
     byDestination: entries.reduce((acc, item) => {
@@ -133,7 +133,7 @@ async function startWatchMode() {
     }
   }, 5000);
 
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     process.on('SIGINT', () => {
       clearInterval(timer);
       resolve();
@@ -185,3 +185,5 @@ module.exports = {
   generateDailyReport,
   run,
 };
+
+export {};

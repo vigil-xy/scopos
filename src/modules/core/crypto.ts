@@ -107,3 +107,5 @@ module.exports = {
   verifySignedReport,
   verifyReportFile,
 };
+
+export {};

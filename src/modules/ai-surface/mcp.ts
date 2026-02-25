@@ -16,7 +16,14 @@ const CONFIG_PATHS = [
 
 const RISKY_TOOL_KEYWORDS = ['filesystem', 'shell', 'database', 'sql', 'exec'];
 
-function safeJson(filePath) {
+type McpServer = {
+  name: string;
+  endpoint: string;
+  auth: any;
+  tools: string[];
+};
+
+function safeJson(filePath: string): any {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch {
@@ -24,11 +31,11 @@ function safeJson(filePath) {
   }
 }
 
-function normalizeServers(config) {
+function normalizeServers(config: any): McpServer[] {
   if (!config || typeof config !== 'object') return [];
 
   if (Array.isArray(config.servers)) {
-    return config.servers.map((server, idx) => ({
+    return config.servers.map((server: any, idx: number) => ({
       name: server.name || `server-${idx + 1}`,
       endpoint: server.endpoint || server.url || server.host || '',
       auth: server.auth || server.apiKey || server.token || server.headers,
@@ -37,7 +44,7 @@ function normalizeServers(config) {
   }
 
   if (config.mcpServers && typeof config.mcpServers === 'object') {
-    return Object.entries(config.mcpServers).map(([name, server]) => ({
+    return (Object.entries(config.mcpServers) as [string, any][]).map(([name, server]) => ({
       name,
       endpoint: server.url || server.endpoint || server.host || '',
       auth: server.auth || server.apiKey || server.token || server.headers,
@@ -48,7 +55,7 @@ function normalizeServers(config) {
   return [];
 }
 
-function parseEndpoint(endpoint) {
+function parseEndpoint(endpoint: string) {
   const normalized = String(endpoint || '').trim();
   if (!normalized) return { host: '', port: null, protocol: '' };
   try {
@@ -60,16 +67,16 @@ function parseEndpoint(endpoint) {
   }
 }
 
-function isPublicHost(host) {
+function isPublicHost(host: string) {
   if (!host) return false;
   return !['127.0.0.1', 'localhost', '::1'].includes(host);
 }
 
-function hasAuth(server) {
+function hasAuth(server: McpServer) {
   return Boolean(server.auth);
 }
 
-function riskFromTools(tools) {
+function riskFromTools(tools: string[]) {
   const normalized = Array.isArray(tools) ? tools.map((t) => String(t).toLowerCase()) : [];
   const risky = normalized.filter((tool) => RISKY_TOOL_KEYWORDS.some((keyword) => tool.includes(keyword)));
   if (risky.length > 0) return { risk: 'high', riskyTools: risky };
@@ -221,3 +228,4 @@ async function scan() {
 }
 
 module.exports = { scan };
+export {};

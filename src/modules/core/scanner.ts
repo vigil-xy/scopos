@@ -32,7 +32,7 @@ const MODULES = {
   },
 };
 
-function normalizeFindings(moduleName, findings) {
+function normalizeFindings(moduleName: string, findings: any[]) {
   return (findings || []).map((finding) => ({
     module: moduleName,
     severity: finding.severity || 'low',
@@ -45,7 +45,7 @@ function normalizeFindings(moduleName, findings) {
   }));
 }
 
-async function runScan(options = {}) {
+async function runScan(options: { module?: string | null } = {}) {
   const selectedModule = options.module || null;
   const moduleNames = selectedModule ? [selectedModule] : Object.keys(MODULES);
 
@@ -67,7 +67,7 @@ async function runScan(options = {}) {
     allFindings.push(...normalized);
   }
 
-  let governanceResult = { title: 'GOVERNANCE MODULES', findings: [] };
+  let governanceResult: { title: string; findings: any[]; skills?: any[] } = { title: 'GOVERNANCE MODULES', findings: [] };
   if (!selectedModule) {
     const governanceScan = await governance.runGovernanceScan();
     governanceResult = {
@@ -93,3 +93,5 @@ module.exports = {
   MODULES,
   runScan,
 };
+
+export {};

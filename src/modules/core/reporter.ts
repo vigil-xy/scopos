@@ -116,3 +116,5 @@ module.exports = {
   renderTextReport,
   computeSummary,
 };
+
+export {};

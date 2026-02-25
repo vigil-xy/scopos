@@ -113,3 +113,15 @@ Quick preflight:
 ```bash
 npm run release:check
 ```
+
+## Development
+
+Scopos is now TypeScript-first and compiles to `dist/`.
+
+```bash
+npm install
+npm run typecheck
+npm test
+npm run build
+node dist/bin/scopos.js --help
+```

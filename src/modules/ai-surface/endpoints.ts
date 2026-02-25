@@ -14,8 +14,15 @@ const INFERENCE_PORTS = [
   { port: 3000,  name: 'Generic',               apiPath: '/'          },
 ];
 
-function httpGet(url, timeoutMs = 3000) {
-  return new Promise((resolve) => {
+type HttpResp = {
+  err: string | null;
+  statusCode: number | null;
+  body: string;
+  headers: Record<string, string | string[] | undefined>;
+};
+
+function httpGet(url: string, timeoutMs = 3000): Promise<HttpResp> {
+  return new Promise<HttpResp>((resolve) => {
     const timer = setTimeout(() => resolve({ err: 'timeout', statusCode: null, body: '', headers: {} }), timeoutMs);
     try {
       const lib = url.startsWith('https') ? https : http;
@@ -29,7 +36,7 @@ function httpGet(url, timeoutMs = 3000) {
   });
 }
 
-function getBindingInfo(port) {
+function getBindingInfo(port: number): string | null {
   try {
     if (process.platform === 'win32') {
       const out = execSync(`netstat -an | findstr ":${port}"`, { stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 }).toString();
@@ -46,7 +53,7 @@ function getBindingInfo(port) {
   } catch { return null; }
 }
 
-function extractModelName(body) {
+function extractModelName(body: string): string {
   try {
     const json = JSON.parse(body);
     if (json.models?.length > 0) return json.models.map(m => m.name || m.id).filter(Boolean).slice(0, 3).join(', ');
@@ -56,7 +63,7 @@ function extractModelName(body) {
   return 'unknown';
 }
 
-function isCorsPermissive(headers) {
+function isCorsPermissive(headers: Record<string, string | string[] | undefined>): boolean {
   return headers['access-control-allow-origin'] === '*';
 }
 
@@ -132,3 +139,4 @@ async function scan() {
 }
 
 module.exports = { scan };
+export {};

@@ -98,3 +98,5 @@ module.exports = {
   runGovernanceScan,
   runShadowIT,
 };
+
+export {};

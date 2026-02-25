@@ -195,3 +195,5 @@ module.exports = {
   version: '0.1.0',
   run,
 };
+
+export {};

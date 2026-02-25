@@ -2,16 +2,20 @@
   "name": "vigil-scopos",
   "version": "0.1.0",
   "description": "AI infrastructure security scanner with cryptographic audit trails",
-  "main": "src/modules/core/scanner.js",
+  "main": "dist/src/modules/core/scanner.js",
   "bin": {
-    "scopos": "./bin/scopos.js"
+    "scopos": "./dist/bin/scopos.js"
   },
   "scripts": {
-    "start": "node bin/scopos.js scan",
-    "scan": "node bin/scopos.js scan",
-    "audit": "node bin/scopos.js audit",
-    "pack:check": "npm pack --dry-run",
-    "release:check": "npm run pack:check && node bin/scopos.js --help"
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test dist/test/**/*.test.js",
+    "start": "npm run build && node dist/bin/scopos.js scan",
+    "scan": "npm run build && node dist/bin/scopos.js scan",
+    "audit": "npm run build && node dist/bin/scopos.js audit",
+    "pack:check": "npm run build && npm pack --dry-run",
+    "release:check": "npm run typecheck && npm test && npm run pack:check && node dist/bin/scopos.js --help",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "chalk": "^5.3.0",
@@ -28,8 +32,19 @@
     "governance",
     "vigil"
   ],
+  "files": [
+    "dist",
+    "README.md",
+    "RELEASE.md",
+    "skills",
+    "keys/.gitkeep"
+  ],
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2"
   },
   "license": "MIT"
 }

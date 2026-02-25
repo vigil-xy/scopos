@@ -211,3 +211,5 @@ if (!process.argv.slice(2).length) {
 }
 
 program.parseAsync(process.argv);
+
+export {};
