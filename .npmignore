@@ -1,0 +1,15 @@
+# VCS and editor
+.git/
+.gitignore
+.vscode/
+
+# Dependencies
+node_modules/
+
+# Runtime/generated data
+package-lock.json
+*.log
+npm-debug.log*
+
+# Local reports and keys generated in home dir should never be packed
+~/.scopos/

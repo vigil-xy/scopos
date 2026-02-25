@@ -86,6 +86,8 @@ async function scan() {
         location: `0.0.0.0:${port}`,
         detail: `${name} is listening on ALL network interfaces. Model: ${modelName}. Auth: ${noAuth ? 'NONE' : 'present'}.`,
         recommendation: `Immediately bind ${name} to 127.0.0.1 only. For Ollama: set OLLAMA_HOST=127.0.0.1. Add authentication before any external exposure.`,
+        tags: ['endpoint', 'public-exposure'],
+        metadata: { port, binding, authStatus: noAuth ? 'missing' : 'configured', model: modelName, corsPermissive },
       });
     }
 
@@ -96,6 +98,8 @@ async function scan() {
         location: `localhost:${port}`,
         detail: `${name} responded to unauthenticated request with HTTP ${resp.statusCode}. Model: ${modelName}.`,
         recommendation: 'Add API key authentication to the inference server configuration to prevent unauthorized model access.',
+        tags: ['endpoint', 'missing-auth'],
+        metadata: { port, binding, authStatus: 'missing', model: modelName, corsPermissive },
       });
     }
 
@@ -106,6 +110,8 @@ async function scan() {
         location: `localhost:${port}`,
         detail: 'Wildcard CORS allows any webpage to send requests to this inference server — enables cross-site model access attacks.',
         recommendation: 'Restrict CORS to specific trusted origins. Remove the wildcard Access-Control-Allow-Origin header.',
+        tags: ['endpoint', 'cors-permissive'],
+        metadata: { port, binding, authStatus: noAuth ? 'missing' : 'configured', model: modelName, corsPermissive: true },
       });
     }
 
@@ -116,6 +122,8 @@ async function scan() {
         location: `localhost:${port}`,
         detail: `${name} is running (localhost only). Authentication is configured. Model: ${modelName}.`,
         recommendation: 'Continue to keep bound to localhost. Periodically rotate access credentials.',
+        tags: ['endpoint'],
+        metadata: { port, binding, authStatus: 'configured', model: modelName, corsPermissive },
       });
     }
   }

@@ -99,6 +99,8 @@ async function scan() {
           location: filePath,
           detail: `Found ${suspiciousUrls.length} unexpected URL(s) in model binary: ${suspiciousUrls.slice(0, 3).join(', ')}`,
           recommendation: 'Do not load this model. Download it again from an official source and report the suspicious URLs.',
+          tags: ['model', 'network-indicator'],
+          metadata: { modelName, size, verificationStatus: verified ? 'verified' : 'unverified', source: official ? 'official' : 'unknown' },
         });
       }
 
@@ -109,6 +111,8 @@ async function scan() {
           location: filePath,
           detail: `Model size: ${size}. No checksum file found. Path suggests unofficial/user download origin.`,
           recommendation: 'Verify this model against official checksums. Download from HuggingFace or Ollama official registry.',
+          tags: ['model', 'unverified', 'unofficial-source'],
+          metadata: { modelName, size, verificationStatus: 'unverified', source: 'non-official' },
         });
         continue;
       }
@@ -120,16 +124,20 @@ async function scan() {
           location: filePath,
           detail: `Model size: ${size}. No .sha256, .md5, or .sha512 file found alongside this model.`,
           recommendation: `Download the official checksum for ${modelName} and create a .sha256 file next to the model.`,
+          tags: ['model', 'unverified'],
+          metadata: { modelName, size, verificationStatus: 'unverified', source: official ? 'official' : 'unknown' },
         });
         continue;
       }
 
       findings.push({
         title: `Model file verified: ${modelName}`,
-        severity: 'info',
+        severity: 'low',
         location: filePath,
         detail: `Size: ${size}. Checksum present. Source: ${official ? 'official cache' : 'user directory'}.`,
         recommendation: 'Periodically re-verify checksums to detect corruption or tampering.',
+        tags: ['model', 'verified'],
+        metadata: { modelName, size, verificationStatus: 'verified', source: official ? 'official' : 'unknown' },
       });
     }
   }
@@ -137,10 +145,11 @@ async function scan() {
   if (totalModels === 0) {
     findings.push({
       title: 'No local AI model files found',
-      severity: 'info',
+      severity: 'low',
       location: MODEL_SEARCH_DIRS.join(', '),
       detail: 'No .gguf, .safetensors, .onnx, or other model files found in standard locations.',
       recommendation: 'No action needed.',
+      tags: ['model'],
     });
   }
 

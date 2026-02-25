@@ -24,6 +24,7 @@ const AGENT_KEYWORDS = [
 const SENSITIVE_DIRS = [
   path.join(HOME, '.ssh'),
   '/etc',
+  path.join(HOME, '.config'),
   path.join(HOME, '.aws'),
   path.join(HOME, '.kube'),
   '/var/lib/postgresql',
@@ -74,6 +75,31 @@ function isRunningFromTemp(cmd) {
   return ['/tmp/', '/var/tmp/', '/temp/', os.tmpdir()].some(t => cmd.includes(t));
 }
 
+function parseWorkingDir(pid) {
+  try {
+    return require('fs').readlinkSync(`/proc/${pid}/cwd`);
+  } catch {
+    return '';
+  }
+}
+
+function hasFilesystemAccessBeyondWorkingDir(pid, cwd) {
+  try {
+    const out = execSync(`lsof -p ${pid} 2>/dev/null`,
+      { stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 }).toString();
+    const lines = out.split('\n').slice(1);
+    return lines.some((line) => {
+      const parts = line.trim().split(/\s+/);
+      const filePath = parts[parts.length - 1] || '';
+      if (!filePath.startsWith('/')) return false;
+      if (!cwd) return true;
+      return !filePath.startsWith(cwd);
+    });
+  } catch {
+    return false;
+  }
+}
+
 async function scan() {
   const findings = [];
   const processes = parseProcessList(getFullProcessList());
@@ -86,10 +112,13 @@ async function scan() {
       const fromTemp  = isRunningFromTemp(proc.cmd);
       let hasNet      = false;
       let hasSensitive = false;
+      let broadFsAccess = false;
+      const cwd = parseWorkingDir(proc.pid);
 
       try {
         hasNet       = hasNetworkConnections(proc.pid);
         hasSensitive = hasSensitiveDirAccess(proc.pid);
+        broadFsAccess = hasFilesystemAccessBeyondWorkingDir(proc.pid, cwd);
       } catch { /* lsof unavailable */ }
 
       if (elevated) {
@@ -99,6 +128,8 @@ async function scan() {
           location: `PID ${proc.pid} (user: ${proc.user})`,
           detail: `Process: ${proc.cmd.slice(0, 120)}`,
           recommendation: `Stop ${name} and restart as a non-privileged user. AI agents must never run as root.`,
+          tags: ['agent', 'elevated-privilege', 'unauthorized-ai-process'],
+          metadata: { process: proc.cmd, pid: proc.pid, user: proc.user },
         });
       }
 
@@ -109,6 +140,8 @@ async function scan() {
           location: `PID ${proc.pid}`,
           detail: `Outbound network connections detected AND open file handles to sensitive directories. Highest-risk configuration for data exfiltration.`,
           recommendation: `Sandbox ${name} with firejail or Docker to restrict filesystem and network access.`,
+          tags: ['agent', 'network', 'filesystem', 'exfiltration-risk'],
+          metadata: { process: proc.cmd, pid: proc.pid, user: proc.user },
         });
       } else if (hasSensitive) {
         findings.push({
@@ -117,6 +150,8 @@ async function scan() {
           location: `PID ${proc.pid}`,
           detail: `Open file handles to sensitive directories (~/.ssh, /etc, or database paths).`,
           recommendation: `Restrict ${name}'s working directory. Run in a container or chroot.`,
+          tags: ['agent', 'filesystem-access'],
+          metadata: { process: proc.cmd, pid: proc.pid, user: proc.user },
         });
       } else if (hasNet) {
         findings.push({
@@ -125,6 +160,20 @@ async function scan() {
           location: `PID ${proc.pid}`,
           detail: `Outbound network connections active. Ensure only approved API endpoints are reachable.`,
           recommendation: 'Use a network policy or proxy to restrict which endpoints this agent can reach.',
+          tags: ['agent', 'network-access'],
+          metadata: { process: proc.cmd, pid: proc.pid, user: proc.user },
+        });
+      }
+
+      if (hasNet && broadFsAccess) {
+        findings.push({
+          title: `${name} agent has network + broad filesystem access beyond working directory`,
+          severity: 'critical',
+          location: `PID ${proc.pid}`,
+          detail: `This agent can access files beyond ${cwd || 'its cwd'} while maintaining outbound connectivity.`,
+          recommendation: 'Constrain filesystem mounts and egress for this process.',
+          tags: ['agent', 'network', 'filesystem', 'beyond-working-dir'],
+          metadata: { process: proc.cmd, pid: proc.pid, workingDirectory: cwd || null },
         });
       }
 
@@ -135,16 +184,20 @@ async function scan() {
           location: `PID ${proc.pid}`,
           detail: `Running from: ${proc.cmd.slice(0, 100)}. May indicate a downloaded-and-run attack.`,
           recommendation: 'Investigate origin. Legitimate AI agents do not run from temp directories.',
+          tags: ['agent', 'temp-execution'],
+          metadata: { process: proc.cmd, pid: proc.pid, user: proc.user },
         });
       }
 
       if (!elevated && !hasNet && !hasSensitive && !fromTemp) {
         findings.push({
           title: `${name} agent process detected`,
-          severity: 'info',
+          severity: 'low',
           location: `PID ${proc.pid} (user: ${proc.user})`,
           detail: 'Running normally. No elevated risk factors detected.',
           recommendation: 'Continue monitoring. Ensure this agent is approved for use.',
+          tags: ['agent'],
+          metadata: { process: proc.cmd, pid: proc.pid, user: proc.user },
         });
       }
     }
