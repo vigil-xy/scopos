@@ -1,0 +1,24 @@
+{
+  "name": "scopos",
+  "version": "0.1.0",
+  "description": "AI attack surface scanner — audits LLM keys, agents, MCP servers, endpoints, shadow IT, and governance",
+  "main": "src/modules/core/scanner.js",
+  "bin": {
+    "scopos": "./bin/scopos.js"
+  },
+  "scripts": {
+    "start": "node bin/scopos.js scan",
+    "scan": "node bin/scopos.js scan",
+    "audit": "node bin/scopos.js audit"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "glob": "^10.3.10",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}
